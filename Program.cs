@@ -8,6 +8,10 @@ namespace Netchange
 {
     class Program
     {
+        static public int myGate;
+
+        static public Dictionary<int, Connection> neighbours = new Dictionary<int, Connection>();
+
         static void Main(string[] args)
         {
 

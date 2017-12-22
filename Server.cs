@@ -7,7 +7,7 @@ using System.Net.Sockets;
 using System.IO;
 using System.Threading;
 
-namespace MultiClientServer
+namespace Netchange
 {
     class Server
     {
@@ -36,7 +36,7 @@ namespace MultiClientServer
                 Console.WriteLine("Client maakt verbinding: " + zijnPoort);
 
                 // Zet de nieuwe verbinding in de verbindingslijst
-                Program.Buren.Add(zijnPoort, new Connection(clientIn, clientOut));
+                Program.neighbours.Add(zijnPoort, new Connection(clientIn, clientOut));
             }
         }
     }

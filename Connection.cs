@@ -7,7 +7,7 @@ using System.Net.Sockets;
 using System.Net;
 using System.Threading;
 
-namespace MultiClientServer
+namespace Netchange
 {
     class Connection
     {
@@ -23,7 +23,7 @@ namespace MultiClientServer
             Write.AutoFlush = true;
 
             // De server kan niet zien van welke poort wij client zijn, dit moeten we apart laten weten
-            Write.WriteLine("Poort: " + Program.MijnPoort);
+            Write.WriteLine("Poort: " + Program.myGate);
 
             // Start het reader-loopje
             new Thread(ReaderThread).Start();

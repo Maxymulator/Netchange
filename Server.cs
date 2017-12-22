@@ -36,7 +36,8 @@ namespace Netchange
                 Console.WriteLine("Client maakt verbinding: " + zijnPoort);
 
                 // Zet de nieuwe verbinding in de verbindingslijst
-                Program.neighbours.Add(zijnPoort, new Connection(clientIn, clientOut));
+                if (!Program.neighbours.ContainsKey(zijnPoort))
+                    Program.neighbours.Add(zijnPoort, new Connection(clientIn, clientOut));
             }
         }
     }

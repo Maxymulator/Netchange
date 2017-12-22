@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace Netchange
@@ -12,31 +13,83 @@ namespace Netchange
 
         static public Dictionary<int, Connection> neighbours = new Dictionary<int, Connection>();
 
+        static Dictionary<string, Thread> threads = new Dictionary<string, Thread>();
+
         static void Main(string[] args)
         {
             Initiate(args);
-            HandleInput(Console.ReadLine());
+            HandleInput();
         }
 
         static void Initiate(string[] args)
         {
+            //Set own gate
             myGate = int.Parse(args[0]);
+            new Server(myGate);
+
+            //Set Console title
             Console.Title = "NetChange " + myGate;
+
+            //Create dictionary of neighbours
             foreach (string s in args.Skip(1))
             {
                 AddNeigbour(int.Parse(s));
             }
+            /*
+            //Create threads
+            threads.Add("Input", new Thread(HandleInput));
+            threads.Add("Connection", new Thread(HandleNewConnection));
+            threads.Add("Message", new Thread(HandleMessage));
+
+            //Start threads
+            threads["Input"].Start();
+            threads["Connection"].Start();
+            threads["Message"].Start();
+            */
         }
 
-        static void HandleInput(string input)
+        static void HandleInput()
         {
+            string input = Console.ReadLine();
+            if (input.StartsWith("R"))
+            {
+                foreach (KeyValuePair<int, Connection> i in neighbours)
+                {
+                   Console.WriteLine("succes");
+                }
+                Console.WriteLine("Fail");
+            }
+            else if (input.StartsWith("B"))
+            {
 
-            HandleInput(Console.ReadLine());
+            }
+            else if (input.StartsWith("C"))
+            {
+
+            }
+            else if (input.StartsWith("D"))
+            {
+
+            }
+            HandleInput();
         }
 
-        static void AddNeigbour(int gate)
+        static void HandleNewConnection()
         {
-            neighbours.Add(gate, new Connection(gate));
+
+        }
+
+        static void HandleMessage()
+        {
+
+        }
+
+        static void AddNeigbour(int port)
+        {
+            if (neighbours.ContainsKey(port))
+                Console.WriteLine("Hier is al verbinding naar!");
+            else
+                neighbours.Add(port, new Connection(port));
         }
     }
 }

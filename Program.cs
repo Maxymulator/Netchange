@@ -15,7 +15,7 @@ namespace Netchange
         static void Main(string[] args)
         {
             Initiate(args);
-            Console.ReadLine();
+            HandleInput(Console.ReadLine());
         }
 
         static void Initiate(string[] args)
@@ -26,6 +26,12 @@ namespace Netchange
             {
                 AddNeigbour(int.Parse(s));
             }
+        }
+
+        static void HandleInput(string input)
+        {
+
+            HandleInput(Console.ReadLine());
         }
 
         static void AddNeigbour(int gate)

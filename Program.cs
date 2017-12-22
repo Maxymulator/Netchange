@@ -14,12 +14,23 @@ namespace Netchange
 
         static void Main(string[] args)
         {
-
+            Initiate(args);
+            Console.ReadLine();
         }
 
-        static void GetInput()
+        static void Initiate(string[] args)
         {
+            myGate = int.Parse(args[0]);
+            Console.Title = "NetChange " + myGate;
+            foreach (string s in args.Skip(1))
+            {
+                AddNeigbour(int.Parse(s));
+            }
+        }
 
+        static void AddNeigbour(int gate)
+        {
+            neighbours.Add(gate, new Connection(gate));
         }
     }
 }

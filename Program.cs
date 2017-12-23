@@ -35,6 +35,11 @@ namespace Netchange
         static char space = ' ';
 
         /// <summary>
+        /// This instance's randomizer
+        /// </summary>
+        static Random r = new Random();
+
+        /// <summary>
         /// When we broadcast an update of creation, we only want to handle that broadcast once, so we use serial numbers to keep uniqueness
         /// </summary>
         static List<int> knownIDs = new List<int>();
@@ -94,6 +99,7 @@ namespace Netchange
                 Nbu.Add(kp.Key, kp.Key);
                 Du.Add(kp.Key, 1);
             }
+            BroadcastOwn();
         }
 
         /// <summary>
@@ -168,32 +174,17 @@ namespace Netchange
         /// </summary>
         static void PrintRoutingTable()
         {
-            //TEMP TOTDAT WE EEN ROUTING TABLE HEBBEN
-            //HET KAN NAMELIJK VEEL MAKKELIJKER WANNEER WE EENMAAL EEN ROUTING TABLE HEBBEN
             StringBuilder sb = new StringBuilder();
-            sb.Append(myPort).Append(space).Append(0).Append(space).Append("local").Append("\n");
-            foreach (KeyValuePair<int, Connection> i in neighbours)
+            foreach(KeyValuePair<int, int> kvp in Nbu)
             {
-                sb.Append(i.Key);
+                sb.Append(kvp.Key);
                 sb.Append(space);
-                sb.Append(CalcDistance(i.Key));
+                sb.Append(Du[kvp.Key]);
                 sb.Append(space);
-                sb.Append("temp");
+                sb.Append(kvp.Value);
                 sb.Append("\n");
             }
             Console.WriteLine(sb);
-        }
-
-        //TEMP TOTDAT WE EEN ROUTING TABLE HEBBEN
-        //UITEINDELIJK VIA LOOKUP IN "ndis" (zie NetchangeBoek.pdf)
-        static int CalcDistance(int destination)
-        {
-            if (destination == myPort)
-                return 0;
-            else if (neighbours.ContainsKey(destination))
-                return 1;
-            else
-                return 2;
         }
 
         /// <summary>
@@ -233,51 +224,123 @@ namespace Netchange
             //Check if message is meant for this port
             if (s.StartsWith(myPort.ToString()))
             {
+                Console.WriteLine(s);
                 // X means we have a broadcast message that needs to be sent to all reachable nodes
-                // format: "[destinationNr]" + " " + "X" + " " + "Create"/"Update"/... + " " + "[portNr of sender]" + " " + "[portNr of initiator of broadcast]" + " " + "[cycleNr]" + " " + "[ID]" + " " + "[hops]"
+                // format: 0"[destinationNr]" + " " + 1"X" + " " + 2"Create"/"Update"/... + " " + 3"[portNr of sender]" + " " + 4"[portNr of initiator of broadcast]" + " " + 5"[cycleNr]" + " " + 6"[ID]" + " " + 7"[hops]"
                 if (s.Split()[1][0] == 'X')
                 {
                     string[] mes = s.Split();
-
-                    if (knownIDs.Contains(int.Parse(mes[6])) || int.Parse(mes[5]) > 20) // If we have seen this broadcast before or the message is older than the amount of nodes in our system, we stop it here.
-                    {
+                    if (int.Parse(mes[5]) > 20)
                         return;
-                    }
+
+                    if (knownIDs.Contains(int.Parse(mes[6]))) // If we have seen this broadcast before or the message is older than the amount of nodes in our system, we stop it here.
+                        return;
+                    else
+                        knownIDs.Add(int.Parse(mes[6]));
 
                     if (mes[2] == "Create") // A process wants us to know that he has been created
                     {
-                        if (!Du.ContainsKey(int.Parse(mes[5])))
+                        if (!Nbu.ContainsKey(int.Parse(mes[5])))
                         {
-                            Du.Add(int.Parse(mes[5]), int.Parse(mes[7])+1);
-                            Nbu.Add(int.Parse(mes[5]), int.Parse(mes[4]));
+                            Du.Add(int.Parse(mes[4]), int.Parse(mes[7])+1);
+                            Nbu.Add(int.Parse(mes[4]), int.Parse(mes[3]));
                         }
-                        else if (Du[int.Parse(mes[5])] > int.Parse(mes[7]+1))
+                        else if (Du[int.Parse(mes[4])] > int.Parse(mes[7]+1))
                         {
-                            Du[int.Parse(mes[5])] = int.Parse(mes[7] + 1);
-                            Nbu[int.Parse(mes[5])] = int.Parse(mes[4]);
+                            Du[int.Parse(mes[4])] = int.Parse(mes[7] + 1);
+                            Nbu[int.Parse(mes[4])] = int.Parse(mes[3]);
                         }
-
-
+                        Broadcast(mes);
+                        BroadcastUpdate();
                         
                         // HOPS AND CYLCE + 1
                         // FORWARD INC BROADCAST
                         // BROADCAST OUR OWN CREATION WITH [ID] TO ALL
                     }
                 }
-
-
-                //Remove portnumber and print message
-                Console.WriteLine(s.Remove(0, s.IndexOf(' ') + 1));
+                else
+                {
+                    //Remove portnumber and print message
+                    Console.WriteLine(s.Remove(0, s.IndexOf(' ') + 1));
+                }
             }
             //Send message to correct destination
             else
             {
                 int dest = int.Parse(s.Split()[0]);
-                //STUUR BERICHT DOOR VIA ROUTING TABLE
+                SendMessage(s);
                 Console.WriteLine("Bericht voor " + dest + " doorgestuurd naar " + Nbu[dest]);
             }
         }
 
+        /// <summary>
+        /// Initiate a broadcast sequence
+        /// </summary>
+        static void BroadcastOwn()
+        {            
+            foreach (KeyValuePair<int, Connection> thisn in neighbours)
+            {
+                StringBuilder message = new StringBuilder();
+                message.Append(thisn.Key);
+                message.Append(space).Append('X');
+                message.Append(space).Append("Create");
+                message.Append(space).Append(myPort);
+                message.Append(space).Append(myPort);
+                message.Append(space).Append(0);
+                message.Append(space).Append(r.Next(100000));
+                message.Append(space).Append(0);
+                SendMessage(message.ToString());
+            }
+        }
+
+        /// <summary>
+        /// Relay a broadcast sequence
+        /// </summary>
+        /// <param name="mes">message to relay</param>
+        static void Broadcast(string[] mes)
+        {
+            // format: 0"[destinationNr]" + " " + 1"X" + " " + 2"Create"/"Update"/... + " " + 3"[portNr of sender]" + " " + 4"[portNr of initiator of broadcast]" + " " + 5"[cycleNr]" + " " + 6"[ID]" + " " + 7"[hops]"
+            foreach (KeyValuePair<int, Connection> thisn in neighbours)
+            {
+                StringBuilder message = new StringBuilder();
+                message.Append(thisn.Key);
+                message.Append(space).Append(mes[1]);
+                message.Append(space).Append(mes[2]);
+                message.Append(space).Append(myPort);
+                message.Append(space).Append(mes[4]);
+                message.Append(space).Append((int.Parse(mes[5]) + 1));
+                message.Append(space).Append(mes[6]);
+                message.Append(space).Append((int.Parse(mes[7]) + 1));
+                SendMessage(message.ToString());
+            }
+        }
+
+        /// <summary>
+        /// Update the rest of the network
+        /// </summary>
+        static void BroadcastUpdate()
+        {
+            foreach (KeyValuePair<int, Connection> thisN in neighbours)
+            {
+                foreach(KeyValuePair<int, int> thisR in Nbu)
+                {
+                    if (thisR.Key != thisN.Key)
+                    {
+                        StringBuilder message = new StringBuilder();
+                        message.Append(thisN.Key);
+                        message.Append(space).Append('X');
+                        message.Append(space).Append("Create");
+                        message.Append(space).Append(myPort);
+                        message.Append(space).Append(thisR.Key);
+                        message.Append(space).Append(0);
+                        message.Append(space).Append(r.Next(100000));
+                        message.Append(space).Append(Du[thisR.Key]);
+                        SendMessage(message.ToString());
+                    }
+                }
+            }
+        }
+        
         /// <summary>
         /// Send a message to a certain port
         /// </summary>
@@ -294,8 +357,22 @@ namespace Netchange
         /// <param name="destMessage">the destination and message in a single string, divided by a space</param>
         static void SendMessage(string destMessage)
         {
-            int dest = int.Parse(destMessage.Split()[0]);
-            neighbours[dest].Write.WriteLine(destMessage);
+            int dest = int.Parse(destMessage.Split(' ')[0]);
+            try
+            {
+                neighbours[dest].Write.WriteLine(destMessage);
+            }
+            catch (Exception e)
+            {
+                try
+                {
+                    neighbours[Nbu[dest]].Write.WriteLine(destMessage);
+                }
+                catch (Exception e2)
+                {
+                    Console.WriteLine("Error in SendMessage: " + e.Message + " and: " + e2);
+                }
+            }
         }
 
         /// <summary>

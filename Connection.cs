@@ -6,6 +6,7 @@ using System.IO;
 using System.Net.Sockets;
 using System.Net;
 using System.Threading;
+using System.Threading.Tasks;
 
 namespace Netchange
 {
@@ -23,7 +24,7 @@ namespace Netchange
             Write.AutoFlush = true;
 
             // De server kan niet zien van welke poort wij client zijn, dit moeten we apart laten weten
-            Write.WriteLine("Poort: " + Program.myGate);
+            Write.WriteLine("Poort: " + Program.myPort);
 
             // Start het reader-loopje
             new Thread(ReaderThread).Start();

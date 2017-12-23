@@ -9,7 +9,7 @@ namespace Netchange
 {
     class Program
     {
-        static public int myGate;
+        static public int myPort;
 
         static public Dictionary<int, Connection> neighbours = new Dictionary<int, Connection>();
 
@@ -24,16 +24,16 @@ namespace Netchange
         static void Initiate(string[] args)
         {
             //Set own gate
-            myGate = int.Parse(args[0]);
-            new Server(myGate);
+            myPort = int.Parse(args[0]);
+            new Server(myPort);
 
             //Set Console title
-            Console.Title = "NetChange " + myGate;
+            Console.Title = "NetChange " + myPort;
 
             //Create dictionary of neighbours
-            foreach (string s in args.Skip(1))
+            for (int i = 1; i < args.Length; i++)
             {
-                AddNeigbour(int.Parse(s));
+                AddNeigbour(int.Parse(args[i]));
             }
             /*
             //Create threads
@@ -55,9 +55,9 @@ namespace Netchange
             {
                 foreach (KeyValuePair<int, Connection> i in neighbours)
                 {
-                   Console.WriteLine("succes");
+                    Console.WriteLine(i.Key);
                 }
-                Console.WriteLine("Fail");
+                Console.WriteLine("Done");
             }
             else if (input.StartsWith("B"))
             {
@@ -88,7 +88,7 @@ namespace Netchange
         {
             if (neighbours.ContainsKey(port))
                 Console.WriteLine("Hier is al verbinding naar!");
-            else
+            else if (port >= myPort)
                 neighbours.Add(port, new Connection(port));
         }
     }

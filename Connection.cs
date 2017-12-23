@@ -46,8 +46,8 @@ namespace Netchange
         {
             try
             {
-                while (true)
-                    Console.WriteLine(Read.ReadLine());
+                while (true) ;
+                    //Console.WriteLine(Read.ReadLine());
             }
             catch { } // Verbinding is kennelijk verbroken
         }

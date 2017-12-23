@@ -25,10 +25,27 @@ namespace Netchange
         static Dictionary<string, Thread> threads = new Dictionary<string, Thread>();
 
         /// <summary>
+        /// A list with for every neighbor a thread that listens to that neighbor
+        /// </summary>
+        static Dictionary<int, Thread> listenerThreads = new Dictionary<int, Thread>();
+
+        /// <summary>
         /// static char to make stringbuilding easier
         /// </summary>
         static char space = ' ';
 
+        /// <summary>
+        /// Table that contains all nodes and the direct neightbor we need to send a message through to that node.
+        /// <para/>First int: Destination node, Second int: Direct neighbor to get there
+        /// </summary>
+        static Dictionary<int, int> Nbu = new Dictionary<int, int>();
+
+        /// <summary>
+        /// Table that contains all nodes and the estimated amount of hops needed to get a message to that node.
+        /// <para/>First int: Destination node, Second int: Estimated distance
+        /// </summary>
+        static Dictionary<int, int> Du = new Dictionary<int, int>();
+        
         static void Main(string[] args)
         {
             Initiate(args);
@@ -51,7 +68,9 @@ namespace Netchange
             //Create dictionary of neighbours
             for (int i = 1; i < args.Length; i++)
             {
-                AddNeigbour(int.Parse(args[i]));
+                int port = int.Parse(args[i]);
+                AddNeigbour(port);
+                listenerThreads.Add(port, new Thread(WaitForMessage));
             }
 
             CreateRoutingTable();
@@ -62,7 +81,14 @@ namespace Netchange
         /// </summary>
         static void CreateRoutingTable()
         {
-            //ROUTING TABLE CREATIE CODE
+            Nbu.Add(myPort, myPort);
+            Du.Add(myPort, 0);
+
+            foreach (KeyValuePair<int, Connection> kp in neighbours)
+            {
+                Nbu.Add(kp.Key, kp.Key);
+                Du.Add(kp.Key, 1);
+            }
         }
 
         /// <summary>
@@ -73,12 +99,15 @@ namespace Netchange
             //Create threads
             threads.Add("Input", new Thread(HandleInput));
             threads.Add("Connection", new Thread(HandleNewConnection));
-            threads.Add("Message", new Thread(WaitForMessage));
 
             //Start threads
             threads["Input"].Start();
             threads["Connection"].Start();
-            threads["Message"].Start();
+
+            foreach (KeyValuePair<int, Thread> kvp in listenerThreads)
+            {
+                listenerThreads[kvp.Key].Start(kvp.Key);
+            }
         }
 
         /// <summary>
@@ -98,7 +127,8 @@ namespace Netchange
             //Send message
             else if (input.StartsWith("B"))
             {
-                
+                string[] message = input.Split();
+                SendMessage(int.Parse(message[1]), message[2]);
             }
 
             //Make connection
@@ -159,9 +189,12 @@ namespace Netchange
         /// <summary>
         /// Waits for incomming messages before it handles them
         /// </summary>
-        static void WaitForMessage()
+        static void WaitForMessage(object obj)
         {
-
+            while (true)
+            {
+                //HandleMessage(neighbours[(int)obj].Read.ReadLine());
+            }
         }
 
         /// <summary>
@@ -170,7 +203,7 @@ namespace Netchange
         /// <param name="s">message to be handled</param>
         static void HandleMessage(string s)
         {
-            //Check if message is ment for this port
+            //Check if message is meant for this port
             if (s.StartsWith(myPort.ToString()))
             {
                 //Remove portnumber and print message
@@ -181,6 +214,11 @@ namespace Netchange
             {
                 //STUUR BERICHT DOOR VIA ROUTING TABLE
             }
+        }
+
+        static void SendMessage(int destination, string message)
+        {
+            neighbours[destination].Write.WriteLine(destination + message);
         }
 
         /// <summary>

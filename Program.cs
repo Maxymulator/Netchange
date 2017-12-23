@@ -35,6 +35,11 @@ namespace Netchange
         static char space = ' ';
 
         /// <summary>
+        /// When we broadcast an update of creation, we only want to handle that broadcast once, so we use serial numbers to keep uniqueness
+        /// </summary>
+        static List<int> knownIDs = new List<int>();
+
+        /// <summary>
         /// Table that contains all nodes and the direct neightbor we need to send a message through to that node.
         /// <para/>First int: Destination node, Second int: Direct neighbor to get there
         /// </summary>
@@ -229,14 +234,34 @@ namespace Netchange
             if (s.StartsWith(myPort.ToString()))
             {
                 // X means we have a broadcast message that needs to be sent to all reachable nodes
-                // format: "[destinationNr]" + " " + "X" + " " + "Create"/"Update"/... + " " + "[portNr of sender]" + " " + "[portNr of initiator of broadcast]" + " " + "[cycleNr]" + " " + "ID"
+                // format: "[destinationNr]" + " " + "X" + " " + "Create"/"Update"/... + " " + "[portNr of sender]" + " " + "[portNr of initiator of broadcast]" + " " + "[cycleNr]" + " " + "[ID]" + " " + "[hops]"
                 if (s.Split()[1][0] == 'X')
                 {
                     string[] mes = s.Split();
 
+                    if (knownIDs.Contains(int.Parse(mes[6])) || int.Parse(mes[5]) > 20) // If we have seen this broadcast before or the message is older than the amount of nodes in our system, we stop it here.
+                    {
+                        return;
+                    }
+
                     if (mes[2] == "Create") // A process wants us to know that he has been created
                     {
+                        if (!Du.ContainsKey(int.Parse(mes[5])))
+                        {
+                            Du.Add(int.Parse(mes[5]), int.Parse(mes[7])+1);
+                            Nbu.Add(int.Parse(mes[5]), int.Parse(mes[4]));
+                        }
+                        else if (Du[int.Parse(mes[5])] > int.Parse(mes[7]+1))
+                        {
+                            Du[int.Parse(mes[5])] = int.Parse(mes[7] + 1);
+                            Nbu[int.Parse(mes[5])] = int.Parse(mes[4]);
+                        }
 
+
+                        
+                        // HOPS AND CYLCE + 1
+                        // FORWARD INC BROADCAST
+                        // BROADCAST OUR OWN CREATION WITH [ID] TO ALL
                     }
                 }
 

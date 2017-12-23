@@ -128,8 +128,7 @@ namespace Netchange
             //Send message
             else if (input.StartsWith("B"))
             {
-                string[] message = input.Split();
-                SendMessage(int.Parse(message[1]), message[2]);
+                SendMessage(input.Remove(0, input.IndexOf(' ') + 1));
             }
 
             //Make connection
@@ -216,6 +215,19 @@ namespace Netchange
             //Check if message is meant for this port
             if (s.StartsWith(myPort.ToString()))
             {
+                // X means we have a broadcast message that needs to be sent to all reachable nodes
+                // format: "[destinationNr]" + " " + "X" + " " + "Create"/"Update"/... + " " + "[portNr of sender]" + " " + "[portNr of initiator of broadcast]" + " " + "[cycleNr]" + " " + "ID"
+                if (s.Split()[1][0] == 'X')
+                {
+                    string[] mes = s.Split();
+
+                    if (mes[2] == "Create") // A process wants us to know that he has been created
+                    {
+
+                    }
+                }
+
+
                 //Remove portnumber and print message
                 Console.WriteLine(s.Remove(0, s.IndexOf(' ') + 1));
             }
@@ -226,9 +238,24 @@ namespace Netchange
             }
         }
 
+        /// <summary>
+        /// Send a message to a certain port
+        /// </summary>
+        /// <param name="dest">The destination port</param>
+        /// <param name="message">The message to be sent</param>
         static void SendMessage(int dest, string message)
         {
-            neighbours[dest].Write.WriteLine(dest + " " + message + " " + myPort);
+            neighbours[dest].Write.WriteLine(dest + " " + message);
+        }
+
+        /// <summary>
+        /// Send a message to a certain port
+        /// </summary>
+        /// <param name="destMessage">the destination and message in a single string, divided by a space</param>
+        static void SendMessage(string destMessage)
+        {
+            int dest = int.Parse(destMessage.Split()[0]);
+            neighbours[dest].Write.WriteLine(destMessage);
         }
 
         /// <summary>

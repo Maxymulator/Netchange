@@ -14,7 +14,7 @@ namespace Netchange
         /// <summary>
         /// Counter that gives unique serial numbers to broadcasts
         /// </summary>
-        static int broadcastCounter = 0; //**************LOCK*****************
+        static int broadcastCounter = 0;
 
         /// <summary>
         /// This instance's port number
@@ -156,9 +156,36 @@ namespace Netchange
             //Make connection
             else if (input.StartsWith("C"))
             {
-                int dest = int.Parse(input.Split()[1]);
-                //MAKE CONNECTION
-                Console.WriteLine("Verbonden: " + dest);
+                /*• Maak verbinding -C poortnummer: maakt poortnummer een directe buurman van u.
+Het C-commando wordt maar op 1 van de consoles gegeven, als u het commando C v krijgt
+dan krijgt v niet ook het commando C u.*/
+                int newNeighbour = int.Parse(input.Split()[1]);
+
+                if (neighbours.ContainsKey(newNeighbour))
+                {
+                    HandleInput();
+                }
+
+                neighbours.Add(newNeighbour, new Connection(newNeighbour));
+                listenerThreads.Add(newNeighbour, new Thread(WaitForMessage));
+                listenerThreads[newNeighbour].Start(newNeighbour);
+                
+                if (!Nbu.ContainsKey(newNeighbour))
+                {
+                    Nbu.Add(newNeighbour, newNeighbour);
+                    Du.Add(newNeighbour, 1);
+                }
+                else if (Du[newNeighbour] > 1)
+                {
+                    Nbu[newNeighbour] = newNeighbour;
+                    Du[newNeighbour] = 1;
+                }
+                
+                SendMessage(newNeighbour + " " + "Y" + " " + myPort);
+
+                BroadcastUpdate();
+
+                Console.WriteLine("Verbonden: " + newNeighbour);
             }
 
             //Break connection
@@ -247,24 +274,50 @@ namespace Netchange
 
                     if (mes[2] == "Create") // A process wants us to know that he has been created
                     {
-                        if (!Nbu.ContainsKey(int.Parse(mes[5])))
+                        if (!Nbu.ContainsKey(int.Parse(mes[4])))
                         {
                             Du.Add(int.Parse(mes[4]), int.Parse(mes[7])+1);
                             Nbu.Add(int.Parse(mes[4]), int.Parse(mes[3]));
+                            BroadcastUpdate();
                         }
-                        else if (Du[int.Parse(mes[4])] > int.Parse(mes[7]+1))
+                        else if (Du[int.Parse(mes[4])] >= int.Parse(mes[7]+1))
                         {
                             Du[int.Parse(mes[4])] = int.Parse(mes[7] + 1);
                             Nbu[int.Parse(mes[4])] = int.Parse(mes[3]);
+                            BroadcastUpdate();
                         }
                         Broadcast(mes);
-                        BroadcastUpdate();
+                        
                         
                         // HOPS AND CYLCE + 1
                         // FORWARD INC BROADCAST
                         // BROADCAST OUR OWN CREATION WITH [ID] TO ALL
                     }
                 }
+
+                //SendMessage(newNeighbour + " " + "Y" + " " + myPort);
+                else if (s.Split()[1][0] == 'Y')
+                {
+                    int newNeighbour = int.Parse(s.Split()[2]);
+
+                    neighbours.Add(newNeighbour, new Connection(newNeighbour));
+                    listenerThreads.Add(newNeighbour, new Thread(WaitForMessage));
+                    listenerThreads[newNeighbour].Start(newNeighbour);
+
+                    if (!Nbu.ContainsKey(newNeighbour))
+                    {
+                        Nbu.Add(newNeighbour, newNeighbour);
+                        Du.Add(newNeighbour, 1);
+                    }
+                    else if (Du[newNeighbour] > 1)
+                    {
+                        Nbu[newNeighbour] = newNeighbour;
+                        Du[newNeighbour] = 1;
+                    }
+                    
+                    BroadcastUpdate();
+                }
+
                 else
                 {
                     //Remove portnumber and print message
@@ -349,7 +402,7 @@ namespace Netchange
                         message.Append(space).Append(thisR.Key);
                         message.Append(space).Append(0);
                         message.Append(space).Append(myPort).Append(broadcastCounter);
-                        message.Append(space).Append(Du[thisR.Key]);
+                        message.Append(space).Append(Du[thisR.Key]+1);
                         SendMessage(message.ToString());
                         lock (broadcastCounterLock)
                         {
@@ -359,7 +412,36 @@ namespace Netchange
                 }
             }
         }
-        
+
+        /// <summary>
+        /// Broadcasts a message to all neighbours if a single port has been updated
+        /// </summary>
+        /// <param name="updatedPort">The port that has been updated</param>
+        static void BroadcastUpdate(int updatedPort)
+        {
+            // format: 0"[destinationNr]" + " " + 1"X" + " " + 2"Create"/"Update"/... + " " + 3"[portNr of sender]" + " " + 4"[portNr of initiator of broadcast]" + " " + 5"[cycleNr]" + " " + 6"[ID]" + " " + 7"[hops]"
+            foreach (KeyValuePair<int, Connection> thisN in neighbours)
+            {
+                if (updatedPort != thisN.Key)
+                {
+                    StringBuilder message = new StringBuilder();
+                    message.Append(thisN.Key);
+                    message.Append(space).Append('X');
+                    message.Append(space).Append("Create");
+                    message.Append(space).Append(myPort);
+                    message.Append(space).Append(updatedPort);
+                    message.Append(space).Append(0);
+                    message.Append(space).Append(myPort).Append(broadcastCounter);
+                    message.Append(space).Append(Du[updatedPort]);
+                    SendMessage(message.ToString());
+                    lock (broadcastCounterLock)
+                    {
+                        broadcastCounter++;
+                    }
+                }
+            }
+        }
+
         /// <summary>
         /// Send a message to a certain port
         /// </summary>

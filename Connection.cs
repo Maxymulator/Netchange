@@ -26,8 +26,8 @@ namespace Netchange
             // De server kan niet zien van welke poort wij client zijn, dit moeten we apart laten weten
             Write.WriteLine("Poort: " + Program.myPort);
 
-            // Start het reader-loopje
-            new Thread(ReaderThread).Start();
+            //// Start het reader-loopje
+            //new Thread(ReaderThread).Start();
         }
 
         // Deze constructor wordt gebruikt als wij SERVER zijn en een CLIENT maakt met ons verbinding
@@ -35,21 +35,21 @@ namespace Netchange
         {
             Read = read; Write = write;
 
-            // Start het reader-loopje
-            new Thread(ReaderThread).Start();
+            //// Start het reader-loopje
+            //new Thread(ReaderThread).Start();
         }
 
         // LET OP: Nadat er verbinding is gelegd, kun je vergeten wie er client/server is (en dat kun je aan het Connection-object dus ook niet zien!)
 
         // Deze loop leest wat er binnenkomt en print dit
-        public void ReaderThread()
-        {
-            try
-            {
-                while (true) ;
-                    //Console.WriteLine(Read.ReadLine());
-            }
-            catch { } // Verbinding is kennelijk verbroken
-        }
+        //public void ReaderThread()
+        //{
+        //    try
+        //    {
+        //        //while (true) ;
+        //            //Console.WriteLine(Read.ReadLine());
+        //    }
+        //    catch { } // Verbinding is kennelijk verbroken
+        //}
     }
 }

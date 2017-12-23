@@ -45,7 +45,7 @@ namespace Netchange
         /// <para/>First int: Destination node, Second int: Estimated distance
         /// </summary>
         static Dictionary<int, int> Du = new Dictionary<int, int>();
-        
+
         static void Main(string[] args)
         {
             Initiate(args);
@@ -106,6 +106,7 @@ namespace Netchange
 
             foreach (KeyValuePair<int, Thread> kvp in listenerThreads)
             {
+                Console.WriteLine("New listener thread started for port: " + kvp.Key);
                 listenerThreads[kvp.Key].Start(kvp.Key);
             }
         }
@@ -189,13 +190,22 @@ namespace Netchange
         /// <summary>
         /// Waits for incomming messages before it handles them
         /// </summary>
-        static void WaitForMessage(object obj)
+        static void WaitForMessage(object port)
         {
-            while (true)
+            int p = (int)port;
+            try
             {
-                //HandleMessage(neighbours[(int)obj].Read.ReadLine());
+                while (true)
+                    HandleMessage(neighbours[p].Read.ReadLine());
             }
-        }
+            catch (Exception e)
+            {
+                Console.WriteLine("Error in " + p + " :" + e.Message);
+                Console.WriteLine("Sleeping for 2 seconds then trying again");
+                Thread.Sleep(2000);
+                WaitForMessage(port);
+            }
+        } 
 
         /// <summary>
         /// Handles a message
@@ -216,9 +226,9 @@ namespace Netchange
             }
         }
 
-        static void SendMessage(int destination, string message)
+        static void SendMessage(int dest, string message)
         {
-            neighbours[destination].Write.WriteLine(destination + message);
+            neighbours[dest].Write.WriteLine(dest + " " + message + " " + myPort);
         }
 
         /// <summary>
@@ -237,10 +247,8 @@ namespace Netchange
     }
 }
 
-
 //Code uit voorbeeld
-/*
-namespace MultiClientServer
+/* namespace MultiClientServer
 {
     class Program
     {
@@ -284,7 +292,4 @@ namespace MultiClientServer
             }
         }
     }
-}
-*/
-
-
+}*/

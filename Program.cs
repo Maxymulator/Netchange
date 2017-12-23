@@ -106,7 +106,7 @@ namespace Netchange
 
             foreach (KeyValuePair<int, Thread> kvp in listenerThreads)
             {
-                Console.WriteLine("New listener thread started for port: " + kvp.Key);
+                //Console.WriteLine("New listener thread started for port: " + kvp.Key);
                 listenerThreads[kvp.Key].Start(kvp.Key);
             }
         }
@@ -128,19 +128,32 @@ namespace Netchange
             //Send message
             else if (input.StartsWith("B"))
             {
-                SendMessage(input.Remove(0, input.IndexOf(' ') + 1));
+                int dest = int.Parse(input.Split()[1]);
+                if (Nbu.ContainsKey(dest))
+                    SendMessage(input.Remove(0, input.IndexOf(' ') + 1));
+                else
+                    Console.WriteLine("Poort " + dest + " is niet bekend");
             }
 
             //Make connection
             else if (input.StartsWith("C"))
             {
-
+                int dest = int.Parse(input.Split()[1]);
+                //MAKE CONNECTION
+                Console.WriteLine("Verbonden: " + dest);
             }
 
             //Break connection
             else if (input.StartsWith("D"))
             {
-
+                int dest = int.Parse(input.Split()[1]);
+                if (Nbu.ContainsKey(dest))
+                {
+                    //BREAK CONNECTION
+                    Console.WriteLine("Verbroken: " + dest);
+                }
+                else
+                    Console.WriteLine("Poort " + dest + " is niet bekend");
             }
             HandleInput();
         }
@@ -201,7 +214,7 @@ namespace Netchange
             {
                 Console.WriteLine("Error in " + p + " :" + e.Message);
                 Console.WriteLine("Sleeping for 2 seconds then trying again");
-                Thread.Sleep(2000);
+                Thread.Sleep(1000);
                 WaitForMessage(port);
             }
         } 
@@ -234,7 +247,9 @@ namespace Netchange
             //Send message to correct destination
             else
             {
+                int dest = int.Parse(s.Split()[0]);
                 //STUUR BERICHT DOOR VIA ROUTING TABLE
+                Console.WriteLine("Bericht voor " + dest + " doorgestuurd naar " + Nbu[dest]);
             }
         }
 

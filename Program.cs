@@ -8,19 +8,37 @@ using System.Threading.Tasks;
 namespace Netchange
 {
     class Program
-    {
+    { 
+        /// <summary>
+        /// This instance's port number
+        /// </summary>
         static public int myPort;
 
+        /// <summary>
+        /// This instance's neighbours
+        /// </summary>
         static public Dictionary<int, Connection> neighbours = new Dictionary<int, Connection>();
 
+        /// <summary>
+        /// This instance's threads
+        /// </summary>
         static Dictionary<string, Thread> threads = new Dictionary<string, Thread>();
+
+        /// <summary>
+        /// static char to make stringbuilding easier
+        /// </summary>
+        static char space = ' ';
 
         static void Main(string[] args)
         {
             Initiate(args);
-            HandleInput();
+            HandleThreads();
         }
 
+        /// <summary>
+        /// Initiates this instance of the program
+        /// </summary>
+        /// <param name="args">The arguments given to the program at launch</param>
         static void Initiate(string[] args)
         {
             //Set own gate
@@ -35,38 +53,61 @@ namespace Netchange
             {
                 AddNeigbour(int.Parse(args[i]));
             }
-            /*
+
+            CreateRoutingTable();
+        }
+
+        /// <summary>
+        /// Creates this instance's routing table
+        /// </summary>
+        static void CreateRoutingTable()
+        {
+            //ROUTING TABLE CREATIE CODE
+        }
+
+        /// <summary>
+        /// Handles the threads used by this instance
+        /// </summary>
+        static void HandleThreads()
+        {
             //Create threads
             threads.Add("Input", new Thread(HandleInput));
             threads.Add("Connection", new Thread(HandleNewConnection));
-            threads.Add("Message", new Thread(HandleMessage));
+            threads.Add("Message", new Thread(WaitForMessage));
 
             //Start threads
             threads["Input"].Start();
             threads["Connection"].Start();
             threads["Message"].Start();
-            */
         }
 
+        /// <summary>
+        /// This function handles the input in the console
+        /// </summary>
         static void HandleInput()
         {
+            //Wait for input
             string input = Console.ReadLine();
+
+            //Print routing table
             if (input.StartsWith("R"))
             {
-                foreach (KeyValuePair<int, Connection> i in neighbours)
-                {
-                    Console.WriteLine(i.Key);
-                }
-                Console.WriteLine("Done");
+                PrintRoutingTable();
             }
+
+            //Send message
             else if (input.StartsWith("B"))
             {
-
+                
             }
+
+            //Make connection
             else if (input.StartsWith("C"))
             {
 
             }
+
+            //Break connection
             else if (input.StartsWith("D"))
             {
 
@@ -74,20 +115,84 @@ namespace Netchange
             HandleInput();
         }
 
+        /// <summary>
+        /// Prints this instance's routing table
+        /// </summary>
+        static void PrintRoutingTable()
+        {
+            //TEMP TOTDAT WE EEN ROUTING TABLE HEBBEN
+            //HET KAN NAMELIJK VEEL MAKKELIJKER WANNEER WE EENMAAL EEN ROUTING TABLE HEBBEN
+            StringBuilder sb = new StringBuilder();
+            sb.Append(myPort).Append(space).Append(0).Append(space).Append("local").Append("\n");
+            foreach (KeyValuePair<int, Connection> i in neighbours)
+            {
+                sb.Append(i.Key);
+                sb.Append(space);
+                sb.Append(CalcDistance(i.Key));
+                sb.Append(space);
+                sb.Append("temp");
+                sb.Append("\n");
+            }
+            Console.WriteLine(sb);
+        }
+
+        //TEMP TOTDAT WE EEN ROUTING TABLE HEBBEN
+        //UITEINDELIJK VIA LOOKUP IN "ndis" (zie NetchangeBoek.pdf)
+        static int CalcDistance(int destination)
+        {
+            if (destination == myPort)
+                return 0;
+            else if (neighbours.ContainsKey(destination))
+                return 1;
+            else
+                return 2;
+        }
+
+        /// <summary>
+        /// Handles any new incoming connections
+        /// </summary>
         static void HandleNewConnection()
         {
 
         }
 
-        static void HandleMessage()
+        /// <summary>
+        /// Waits for incomming messages before it handles them
+        /// </summary>
+        static void WaitForMessage()
         {
 
         }
 
+        /// <summary>
+        /// Handles a message
+        /// </summary>
+        /// <param name="s">message to be handled</param>
+        static void HandleMessage(string s)
+        {
+            //Check if message is ment for this port
+            if (s.StartsWith(myPort.ToString()))
+            {
+                //Remove portnumber and print message
+                Console.WriteLine(s.Remove(0, s.IndexOf(' ') + 1));
+            }
+            //Send message to correct destination
+            else
+            {
+                //STUUR BERICHT DOOR VIA ROUTING TABLE
+            }
+        }
+
+        /// <summary>
+        /// Adds a neighbour to this instance's dictionary
+        /// </summary>
+        /// <param name="port">Port number of the neighbour</param>
         static void AddNeigbour(int port)
         {
+            //Check if neighbour already exists
             if (neighbours.ContainsKey(port))
                 Console.WriteLine("Hier is al verbinding naar!");
+            //Only create connection with bigger port numbers to avoid double connections
             else if (port >= myPort)
                 neighbours.Add(port, new Connection(port));
         }

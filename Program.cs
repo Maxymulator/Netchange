@@ -8,7 +8,14 @@ using System.Threading.Tasks;
 namespace Netchange
 {
     class Program
-    { 
+    {
+        static object broadcastCounterLock = new object();
+
+        /// <summary>
+        /// Counter that gives unique serial numbers to broadcasts
+        /// </summary>
+        static int broadcastCounter = 0; //**************LOCK*****************
+
         /// <summary>
         /// This instance's port number
         /// </summary>
@@ -230,7 +237,7 @@ namespace Netchange
                 if (s.Split()[1][0] == 'X')
                 {
                     string[] mes = s.Split();
-                    if (int.Parse(mes[5]) > 20)
+                    if (int.Parse(mes[5]) > 20 || int.Parse(mes[4]) == myPort)
                         return;
 
                     if (knownIDs.Contains(int.Parse(mes[6]))) // If we have seen this broadcast before or the message is older than the amount of nodes in our system, we stop it here.
@@ -287,9 +294,13 @@ namespace Netchange
                 message.Append(space).Append(myPort);
                 message.Append(space).Append(myPort);
                 message.Append(space).Append(0);
-                message.Append(space).Append(r.Next(100000));
+                message.Append(space).Append(myPort).Append(broadcastCounter);
                 message.Append(space).Append(0);
                 SendMessage(message.ToString());
+                lock (broadcastCounterLock)
+                {
+                    broadcastCounter++;
+                }
             }
         }
 
@@ -312,6 +323,10 @@ namespace Netchange
                 message.Append(space).Append(mes[6]);
                 message.Append(space).Append((int.Parse(mes[7]) + 1));
                 SendMessage(message.ToString());
+                lock (broadcastCounterLock)
+                {
+                    broadcastCounter++;
+                }
             }
         }
 
@@ -333,9 +348,13 @@ namespace Netchange
                         message.Append(space).Append(myPort);
                         message.Append(space).Append(thisR.Key);
                         message.Append(space).Append(0);
-                        message.Append(space).Append(r.Next(100000));
+                        message.Append(space).Append(myPort).Append(broadcastCounter);
                         message.Append(space).Append(Du[thisR.Key]);
                         SendMessage(message.ToString());
+                        lock (broadcastCounterLock)
+                        {
+                            broadcastCounter++;
+                        }
                     }
                 }
             }
